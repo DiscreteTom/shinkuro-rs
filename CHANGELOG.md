@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-28
+
+### Fixed
+
+- Add musl targets (x86_64 and aarch64) for better Linux compatibility with older glibc versions
+
 ## [0.1.0] - 2026-01-28
 
 ### Added
@@ -21,5 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (32 tests)
 - npm package distribution via cargo-dist
 
-[unreleased]: https://github.com/DiscreteTom/shinkuro-rs/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/DiscreteTom/shinkuro-rs/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/DiscreteTom/shinkuro-rs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/DiscreteTom/shinkuro-rs/releases/tag/v0.1.0
