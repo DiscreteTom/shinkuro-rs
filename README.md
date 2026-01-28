@@ -12,7 +12,7 @@ Useful for loading prompts from various sources and formats into your MCP-enable
 
 <details>
 
-<summary><code>npx shinkuro --help</code></summary>
+<summary><code>npx -y shinkuro -- --help</code></summary>
 
 ```sh
 Universal prompt loader MCP server
@@ -42,7 +42,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "shinkuro": {
       "command": "npx",
-      "args": ["shinkuro"],
+      "args": ["-y", "shinkuro"],
       "env": {
         "FOLDER": "/path/to/prompts"
       }
@@ -60,7 +60,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "shinkuro": {
       "command": "npx",
-      "args": ["shinkuro"],
+      "args": ["-y", "shinkuro"],
       "env": {
         "GIT_URL": "https://github.com/owner/repo.git",
         "FOLDER": "prompts" // optional, subfolder within git repo
@@ -89,7 +89,7 @@ Then add to your MCP client configuration:
   "mcpServers": {
     "shinkuro": {
       "command": "npx",
-      "args": ["shinkuro"],
+      "args": ["-y", "shinkuro"],
       "env": {
         "FOLDER": "./.shinkuro/prompts",
         "VARIABLE_FORMAT": "dollar",
