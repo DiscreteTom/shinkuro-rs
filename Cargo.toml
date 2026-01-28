@@ -1,12 +1,8 @@
 [package]
-name = "shinkuro-rs"
+name = "shinkuro"
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/DiscreteTom/shinkuro-rs"
-
-[[bin]]
-name = "shinkuro"
-path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

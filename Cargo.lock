@@ -686,7 +686,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shinkuro-rs"
+name = "shinkuro"
 version = "0.1.0"
 dependencies = [
  "anyhow",
