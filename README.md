@@ -1,5 +1,8 @@
 # Shinkuro - Universal prompt loader MCP server
 
+[![npm version](https://img.shields.io/npm/v/shinkuro)](https://www.npmjs.com/package/shinkuro)
+[![GitHub release](https://img.shields.io/github/v/release/DiscreteTom/shinkuro-rs)](https://github.com/DiscreteTom/shinkuro-rs/releases)
+
 Loads markdown files from a local folder or git repository and serves them as [MCP Prompts](https://modelcontextprotocol.io/specification/2025-06-18/server/prompts).
 
 Useful for loading prompts from various sources and formats into your MCP-enabled applications, and sharing prompts across organizations.
