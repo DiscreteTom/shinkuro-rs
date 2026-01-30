@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Shell and PowerShell installers for standalone binary distribution
+- MCP `ping` method support
 
 ## [0.1.2] - 2026-01-30
 

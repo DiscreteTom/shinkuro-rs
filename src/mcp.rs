@@ -77,6 +77,12 @@ impl McpServer {
                 error: None,
             }),
             "notifications/initialized" => None,
+            "ping" => Some(Response {
+                jsonrpc: "2.0".to_string(),
+                id: req.id,
+                result: Some(json!({})),
+                error: None,
+            }),
             "prompts/list" => Some(Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
