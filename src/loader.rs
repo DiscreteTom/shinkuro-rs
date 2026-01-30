@@ -18,9 +18,10 @@ pub fn get_folder_path(
             repo_path
         })
     } else {
-        folder
-            .map(PathBuf::from)
-            .ok_or_else(|| anyhow::anyhow!("Either folder or git-url must be provided"))
+        let path =
+            folder.ok_or_else(|| anyhow::anyhow!("Either folder or git-url must be provided"))?;
+        let expanded = shellexpand::tilde(path);
+        Ok(std::env::current_dir()?.join(expanded.as_ref()))
     }
 }
 
