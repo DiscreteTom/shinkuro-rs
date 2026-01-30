@@ -15,7 +15,7 @@ Useful for loading prompts from various sources and formats into your MCP-enable
 
 <details>
 
-<summary><code>npx -y shinkuro --help</code></summary>
+<summary><code>shinkuro --help</code></summary>
 
 ```sh
 Universal prompt loader MCP server
@@ -172,6 +172,38 @@ Use `{{var}}` (double brackets) to escape and display literal brackets when usin
 >
 > - `brace` (default): `{user}`, `{project}`
 > - `dollar`: `$user`, `$project`
+
+## Install Standalone Binary
+
+<details>
+
+<summary>Shell (macOS/Linux)</summary>
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/DiscreteTom/shinkuro-rs/releases/latest/download/shinkuro-installer.sh | sh
+```
+
+</details>
+
+<details>
+
+<summary>PowerShell (Windows)</summary>
+
+```powershell
+irm https://github.com/DiscreteTom/shinkuro-rs/releases/latest/download/shinkuro-installer.ps1 | iex
+```
+
+</details>
+
+<details>
+
+<summary>npm</summary>
+
+```sh
+npm install -g shinkuro
+```
+
+</details>
 
 ## Example Prompt Repositories
 
