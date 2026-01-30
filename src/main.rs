@@ -8,7 +8,7 @@ use clap::Parser;
 use anyhow::Result;
 
 #[derive(Parser)]
-#[command(name = "shinkuro-rs", about = "Universal prompt loader MCP server", version)]
+#[command(name = "shinkuro", about = "Universal prompt loader MCP server", version)]
 struct Args {
     #[arg(long, env = "FOLDER")]
     folder: Option<String>,

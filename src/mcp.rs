@@ -68,7 +68,7 @@ impl McpServer {
                 result: Some(json!({
                     "protocolVersion": "2025-06-18",
                     "capabilities": { "prompts": {} },
-                    "serverInfo": { "name": "shinkuro-rs", "version": "0.1.0" }
+                    "serverInfo": { "name": "shinkuro", "version": "0.1.0" }
                 })),
                 error: None,
             },
