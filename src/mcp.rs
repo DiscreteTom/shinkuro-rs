@@ -1,9 +1,9 @@
 use crate::prompt::MarkdownPrompt;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use anyhow::Result;
 
 #[derive(Deserialize)]
 struct Request {
@@ -34,19 +34,21 @@ pub struct McpServer {
 
 impl McpServer {
     pub fn new() -> Self {
-        Self { prompts: HashMap::new() }
+        Self {
+            prompts: HashMap::new(),
+        }
     }
-    
+
     pub fn add_prompt(&mut self, prompt: MarkdownPrompt) {
         self.prompts.insert(prompt.name.clone(), prompt);
     }
-    
+
     pub async fn run(&self) -> Result<()> {
         let stdin = tokio::io::stdin();
         let mut stdout = tokio::io::stdout();
         let mut reader = BufReader::new(stdin);
         let mut line = String::new();
-        
+
         while reader.read_line(&mut line).await? > 0 {
             if let Ok(req) = serde_json::from_str::<Request>(&line) {
                 let resp = self.handle_request(req);
@@ -59,7 +61,7 @@ impl McpServer {
         }
         Ok(())
     }
-    
+
     fn handle_request(&self, req: Request) -> Response {
         match req.method.as_str() {
             "initialize" => Response {
@@ -90,16 +92,22 @@ impl McpServer {
                 error: None,
             },
             "prompts/get" => {
-                let name = req.params.as_ref()
+                let name = req
+                    .params
+                    .as_ref()
                     .and_then(|p| p.get("name"))
                     .and_then(|n| n.as_str());
-                
+
                 if let Some(name) = name {
                     if let Some(prompt) = self.prompts.get(name) {
-                        let args = req.params.as_ref()
+                        let args = req
+                            .params
+                            .as_ref()
                             .and_then(|p| p.get("arguments"))
-                            .and_then(|a| serde_json::from_value::<HashMap<String, String>>(a.clone()).ok());
-                        
+                            .and_then(|a| {
+                                serde_json::from_value::<HashMap<String, String>>(a.clone()).ok()
+                            });
+
                         match prompt.render(args) {
                             Ok(content) => Response {
                                 jsonrpc: "2.0".to_string(),
@@ -113,15 +121,21 @@ impl McpServer {
                                 jsonrpc: "2.0".to_string(),
                                 id: req.id,
                                 result: None,
-                                error: Some(ErrorObject { code: -32602, message: e }),
-                            }
+                                error: Some(ErrorObject {
+                                    code: -32602,
+                                    message: e,
+                                }),
+                            },
                         }
                     } else {
                         Response {
                             jsonrpc: "2.0".to_string(),
                             id: req.id,
                             result: None,
-                            error: Some(ErrorObject { code: -32602, message: "Prompt not found".to_string() }),
+                            error: Some(ErrorObject {
+                                code: -32602,
+                                message: "Prompt not found".to_string(),
+                            }),
                         }
                     }
                 } else {
@@ -129,16 +143,22 @@ impl McpServer {
                         jsonrpc: "2.0".to_string(),
                         id: req.id,
                         result: None,
-                        error: Some(ErrorObject { code: -32602, message: "Missing name parameter".to_string() }),
+                        error: Some(ErrorObject {
+                            code: -32602,
+                            message: "Missing name parameter".to_string(),
+                        }),
                     }
                 }
-            },
+            }
             _ => Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
                 result: None,
-                error: Some(ErrorObject { code: -32601, message: "Method not found".to_string() }),
-            }
+                error: Some(ErrorObject {
+                    code: -32601,
+                    message: "Method not found".to_string(),
+                }),
+            },
         }
     }
 }

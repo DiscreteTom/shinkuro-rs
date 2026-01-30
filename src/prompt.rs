@@ -1,7 +1,7 @@
-use crate::model::PromptData;
 use crate::formatter::Formatter;
-use std::collections::HashMap;
+use crate::model::PromptData;
 use anyhow::Result;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct PromptArgument {
@@ -29,37 +29,53 @@ impl MarkdownPrompt {
     ) -> Result<Self> {
         let (arguments, arg_defaults) = if auto_discover {
             if !data.arguments.is_empty() {
-                anyhow::bail!("prompt_data.arguments must be empty when auto_discover_args is enabled");
+                anyhow::bail!(
+                    "prompt_data.arguments must be empty when auto_discover_args is enabled"
+                );
             }
             let discovered = formatter.extract_arguments(&data.content)?;
             let mut args: Vec<_> = discovered.into_iter().collect();
             args.sort();
-            (args.into_iter().map(|name| PromptArgument {
-                name,
-                description: String::new(),
-                required: true,
-            }).collect(), HashMap::new())
+            (
+                args.into_iter()
+                    .map(|name| PromptArgument {
+                        name,
+                        description: String::new(),
+                        required: true,
+                    })
+                    .collect(),
+                HashMap::new(),
+            )
         } else {
             let discovered = formatter.extract_arguments(&data.content)?;
-            let provided: std::collections::HashSet<_> = data.arguments.iter().map(|a| a.name.clone()).collect();
+            let provided: std::collections::HashSet<_> =
+                data.arguments.iter().map(|a| a.name.clone()).collect();
             if discovered != provided {
-                anyhow::bail!("Content arguments {:?} don't match provided arguments {:?}", discovered, provided);
+                anyhow::bail!(
+                    "Content arguments {:?} don't match provided arguments {:?}",
+                    discovered,
+                    provided
+                );
             }
             let mut defaults = HashMap::new();
-            let args = data.arguments.into_iter().map(|a| {
-                let required = a.default.is_none();
-                if let Some(d) = a.default {
-                    defaults.insert(a.name.clone(), d);
-                }
-                PromptArgument {
-                    name: a.name,
-                    description: a.description,
-                    required,
-                }
-            }).collect();
+            let args = data
+                .arguments
+                .into_iter()
+                .map(|a| {
+                    let required = a.default.is_none();
+                    if let Some(d) = a.default {
+                        defaults.insert(a.name.clone(), d);
+                    }
+                    PromptArgument {
+                        name: a.name,
+                        description: a.description,
+                        required,
+                    }
+                })
+                .collect();
             (args, defaults)
         };
-        
+
         Ok(Self {
             name: data.name,
             title: data.title,
@@ -70,19 +86,19 @@ impl MarkdownPrompt {
             formatter,
         })
     }
-    
+
     pub fn render(&self, args: Option<HashMap<String, String>>) -> Result<String, String> {
         let mut render_args = self.arg_defaults.clone();
         if let Some(a) = args {
             render_args.extend(a);
         }
-        
+
         for arg in &self.arguments {
             if arg.required && !render_args.contains_key(&arg.name) {
                 return Err(format!("Missing required arguments: {{{}}}", arg.name));
             }
         }
-        
+
         Ok(self.formatter.format(&self.content, &render_args))
     }
 }
@@ -273,7 +289,10 @@ mod tests {
         let result = MarkdownPrompt::from_prompt_data(data, Formatter::Brace, true);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("must be empty when auto_discover_args is enabled"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be empty when auto_discover_args is enabled"));
     }
 
     #[test]
@@ -296,4 +315,3 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("don't match"));
     }
 }
-

@@ -1,5 +1,5 @@
-use std::collections::{HashMap, HashSet};
 use anyhow::Result;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub enum Formatter {
@@ -24,17 +24,21 @@ impl Formatter {
 }
 
 pub fn validate_variable_name(name: &str) -> bool {
-    if name.is_empty() { return false; }
+    if name.is_empty() {
+        return false;
+    }
     let mut chars = name.chars();
     let first = chars.next().unwrap();
-    if !first.is_ascii_alphabetic() && first != '_' { return false; }
+    if !first.is_ascii_alphabetic() && first != '_' {
+        return false;
+    }
     chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 fn extract_brace_args(content: &str) -> Result<HashSet<String>> {
     let mut args = HashSet::new();
     let mut chars = content.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         if c == '{' {
             if chars.peek() == Some(&'{') {
@@ -64,7 +68,7 @@ fn extract_brace_args(content: &str) -> Result<HashSet<String>> {
 fn extract_dollar_args(content: &str) -> Result<HashSet<String>> {
     let mut args = HashSet::new();
     let mut chars = content.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         if c == '$' {
             if chars.peek() == Some(&'$') {
@@ -94,7 +98,7 @@ fn extract_dollar_args(content: &str) -> Result<HashSet<String>> {
 fn format_brace(content: &str, variables: &HashMap<String, String>) -> String {
     let mut result = String::with_capacity(content.len());
     let mut chars = content.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         if c == '{' {
             if chars.peek() == Some(&'{') {
@@ -140,7 +144,7 @@ fn format_brace(content: &str, variables: &HashMap<String, String>) -> String {
 fn format_dollar(content: &str, variables: &HashMap<String, String>) -> String {
     let mut result = String::with_capacity(content.len());
     let mut chars = content.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         if c == '$' {
             if chars.peek() == Some(&'$') {
@@ -206,7 +210,9 @@ mod tests {
     #[test]
     fn test_brace_formatter_extract_arguments() {
         let formatter = Formatter::Brace;
-        let args = formatter.extract_arguments("Hello {user} from {project}").unwrap();
+        let args = formatter
+            .extract_arguments("Hello {user} from {project}")
+            .unwrap();
         assert_eq!(args.len(), 2);
         assert!(args.contains("user"));
         assert!(args.contains("project"));
@@ -217,7 +223,10 @@ mod tests {
         let formatter = Formatter::Brace;
         let result = formatter.extract_arguments("Hello {123}");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid variable name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid variable name"));
     }
 
     #[test]
@@ -240,7 +249,9 @@ mod tests {
     #[test]
     fn test_dollar_formatter_extract_arguments() {
         let formatter = Formatter::Dollar;
-        let args = formatter.extract_arguments("Hello $user from $project").unwrap();
+        let args = formatter
+            .extract_arguments("Hello $user from $project")
+            .unwrap();
         assert_eq!(args.len(), 2);
         assert!(args.contains("user"));
         assert!(args.contains("project"));
@@ -280,7 +291,9 @@ mod tests {
     fn test_get_formatter_invalid() {
         let result = get_formatter("invalid");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown formatter"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown formatter"));
     }
 }
-

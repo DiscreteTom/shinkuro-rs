@@ -1,14 +1,18 @@
-mod model;
-mod loader;
 pub mod formatter;
-mod prompt;
+mod loader;
 mod mcp;
+mod model;
+mod prompt;
 
-use clap::Parser;
 use anyhow::Result;
+use clap::Parser;
 
 #[derive(Parser)]
-#[command(name = "shinkuro", about = "Universal prompt loader MCP server", version)]
+#[command(
+    name = "shinkuro",
+    about = "Universal prompt loader MCP server",
+    version
+)]
 struct Args {
     #[arg(long, env = "FOLDER")]
     folder: Option<String>,
@@ -29,17 +33,17 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     let folder_path = loader::get_folder_path(
         args.folder.as_deref(),
         args.git_url.as_deref(),
         &args.cache_dir,
         args.auto_pull,
     )?;
-    
+
     let formatter = formatter::get_formatter(&args.variable_format)?;
     let prompts = loader::scan_markdown_files(&folder_path, args.skip_frontmatter)?;
-    
+
     let mut server = mcp::McpServer::new();
     for prompt_data in prompts {
         let prompt = prompt::MarkdownPrompt::from_prompt_data(
@@ -49,6 +53,6 @@ async fn main() -> Result<()> {
         )?;
         server.add_prompt(prompt);
     }
-    
+
     server.run().await
 }

@@ -1,7 +1,7 @@
 use crate::model::{Argument, PromptData};
+use anyhow::Result;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use anyhow::Result;
 
 pub fn get_folder_path(
     folder: Option<&str>,
@@ -18,14 +18,19 @@ pub fn get_folder_path(
             repo_path
         })
     } else {
-        folder.map(PathBuf::from).ok_or_else(|| anyhow::anyhow!("Either folder or git-url must be provided"))
+        folder
+            .map(PathBuf::from)
+            .ok_or_else(|| anyhow::anyhow!("Either folder or git-url must be provided"))
     }
 }
 
 fn get_cache_path(git_url: &str, cache_dir: &str) -> Result<PathBuf> {
     let (owner, name) = parse_git_url(git_url)?;
     let expanded = shellexpand::tilde(cache_dir);
-    Ok(PathBuf::from(expanded.as_ref()).join("git").join(owner).join(name))
+    Ok(PathBuf::from(expanded.as_ref())
+        .join("git")
+        .join(owner)
+        .join(name))
 }
 
 fn parse_git_url(git_url: &str) -> Result<(String, String)> {
@@ -35,17 +40,23 @@ fn parse_git_url(git_url: &str) -> Result<(String, String)> {
             let path = &ssh_part[colon_pos + 1..];
             let parts: Vec<&str> = path.trim_end_matches(".git").split('/').collect();
             if parts.len() >= 2 {
-                return Ok((parts[parts.len() - 2].to_string(), parts[parts.len() - 1].to_string()));
+                return Ok((
+                    parts[parts.len() - 2].to_string(),
+                    parts[parts.len() - 1].to_string(),
+                ));
             }
         }
     }
-    
+
     // Handle HTTPS URLs
     let url = url::Url::parse(git_url)?;
     let path = url.path().trim_start_matches('/').trim_end_matches(".git");
     let parts: Vec<&str> = path.split('/').collect();
     if parts.len() >= 2 {
-        Ok((parts[parts.len() - 2].to_string(), parts[parts.len() - 1].to_string()))
+        Ok((
+            parts[parts.len() - 2].to_string(),
+            parts[parts.len() - 1].to_string(),
+        ))
     } else {
         anyhow::bail!("Cannot extract user/repo from git URL: {}", git_url)
     }
@@ -57,14 +68,16 @@ fn clone_or_update(path: &Path, url: &str, auto_pull: bool) -> Result<()> {
             let repo = git2::Repository::open(path)?;
             let mut remote = repo.find_remote("origin")?;
             remote.fetch(&[] as &[&str], None, None)?;
-            
+
             let fetch_head = repo.find_reference("FETCH_HEAD")?;
             let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
             let analysis = repo.merge_analysis(&[&fetch_commit])?;
-            
+
             if analysis.0.is_fast_forward() {
                 let head = repo.head()?;
-                let refname = head.name().ok_or_else(|| anyhow::anyhow!("Invalid HEAD reference"))?;
+                let refname = head
+                    .name()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid HEAD reference"))?;
                 let mut reference = repo.find_reference(refname)?;
                 reference.set_target(fetch_commit.id(), "Fast-Forward")?;
                 repo.set_head(refname)?;
@@ -86,10 +99,13 @@ fn clone_or_update(path: &Path, url: &str, auto_pull: bool) -> Result<()> {
 
 pub fn scan_markdown_files(folder: &Path, skip_frontmatter: bool) -> Result<Vec<PromptData>> {
     if !folder.exists() || !folder.is_dir() {
-        eprintln!("Warning: folder path '{}' does not exist or is not a directory", folder.display());
+        eprintln!(
+            "Warning: folder path '{}' does not exist or is not a directory",
+            folder.display()
+        );
         return Ok(Vec::new());
     }
-    
+
     let mut prompts = Vec::new();
     for entry in WalkDir::new(folder).into_iter().filter_map(|e| e.ok()) {
         if entry.path().extension().and_then(|s| s.to_str()) == Some("md") {
@@ -97,7 +113,11 @@ pub fn scan_markdown_files(folder: &Path, skip_frontmatter: bool) -> Result<Vec<
                 Ok(content) => {
                     match parse_markdown(entry.path(), folder, &content, skip_frontmatter) {
                         Ok(prompt) => prompts.push(prompt),
-                        Err(e) => eprintln!("Warning: failed to process {}: {}", entry.path().display(), e),
+                        Err(e) => eprintln!(
+                            "Warning: failed to process {}: {}",
+                            entry.path().display(),
+                            e
+                        ),
                     }
                 }
                 Err(e) => eprintln!("Warning: failed to read {}: {}", entry.path().display(), e),
@@ -107,11 +127,16 @@ pub fn scan_markdown_files(folder: &Path, skip_frontmatter: bool) -> Result<Vec<
     Ok(prompts)
 }
 
-fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: bool) -> Result<PromptData> {
+fn parse_markdown(
+    file: &Path,
+    folder: &Path,
+    content: &str,
+    skip_frontmatter: bool,
+) -> Result<PromptData> {
     let stem = file.file_stem().unwrap().to_str().unwrap().to_string();
     let rel_path = file.strip_prefix(folder).unwrap().display().to_string();
     let default_description = format!("Prompt from {}", rel_path);
-    
+
     if skip_frontmatter {
         return Ok(PromptData {
             name: stem.clone(),
@@ -121,7 +146,7 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
             content: content.to_string(),
         });
     }
-    
+
     // Parse frontmatter manually
     let (frontmatter, body) = if content.starts_with("---\n") {
         if let Some(end_idx) = content[4..].find("\n---\n") {
@@ -134,12 +159,12 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
     } else {
         (None, content)
     };
-    
+
     let mut name = stem.clone();
     let mut title = stem.clone();
     let mut description = default_description.clone();
     let mut arguments = Vec::new();
-    
+
     if let Some(fm) = frontmatter {
         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(fm) {
             if let Some(mapping) = yaml.as_mapping() {
@@ -148,21 +173,27 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                     if let Some(s) = n.as_str() {
                         name = s.to_string();
                     } else {
-                        eprintln!("Warning: 'name' field in {} is not a string, converting to string", file.display());
+                        eprintln!(
+                            "Warning: 'name' field in {} is not a string, converting to string",
+                            file.display()
+                        );
                         name = n.as_str().unwrap_or(&format!("{:?}", n)).to_string();
                     }
                 }
-                
+
                 // Extract title field
                 if let Some(t) = mapping.get("title") {
                     if let Some(s) = t.as_str() {
                         title = s.to_string();
                     } else {
-                        eprintln!("Warning: 'title' field in {} is not a string, converting to string", file.display());
+                        eprintln!(
+                            "Warning: 'title' field in {} is not a string, converting to string",
+                            file.display()
+                        );
                         title = t.as_str().unwrap_or(&format!("{:?}", t)).to_string();
                     }
                 }
-                
+
                 // Extract description field
                 if let Some(d) = mapping.get("description") {
                     if let Some(s) = d.as_str() {
@@ -172,7 +203,7 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                         description = d.as_str().unwrap_or(&format!("{:?}", d)).to_string();
                     }
                 }
-                
+
                 // Extract arguments
                 if let Some(args_value) = mapping.get("arguments") {
                     if let Some(args) = args_value.as_sequence() {
@@ -187,7 +218,10 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                                         }
                                         // Validate variable name
                                         if !crate::formatter::validate_variable_name(s) {
-                                            return Err(anyhow::anyhow!("Argument name '{}' contains invalid characters", s));
+                                            return Err(anyhow::anyhow!(
+                                                "Argument name '{}' contains invalid characters",
+                                                s
+                                            ));
                                         }
                                         s.to_string()
                                     } else {
@@ -202,7 +236,7 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                                     eprintln!("Warning: argument 'name' field is missing in {}, skipping argument", file.display());
                                     continue;
                                 };
-                                
+
                                 // Parse description (optional)
                                 let arg_description = if let Some(d) = arg_map.get("description") {
                                     if let Some(s) = d.as_str() {
@@ -214,7 +248,7 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                                 } else {
                                     String::new()
                                 };
-                                
+
                                 // Parse default (optional)
                                 let arg_default = if let Some(def) = arg_map.get("default") {
                                     if let Some(s) = def.as_str() {
@@ -226,24 +260,30 @@ fn parse_markdown(file: &Path, folder: &Path, content: &str, skip_frontmatter: b
                                 } else {
                                     None
                                 };
-                                
+
                                 arguments.push(Argument {
                                     name: arg_name,
                                     description: arg_description,
                                     default: arg_default,
                                 });
                             } else {
-                                eprintln!("Warning: argument item in {} is not a dict, skipping", file.display());
+                                eprintln!(
+                                    "Warning: argument item in {} is not a dict, skipping",
+                                    file.display()
+                                );
                             }
                         }
                     } else if !args_value.is_null() {
-                        eprintln!("Warning: 'arguments' field in {} is not a list, ignoring", file.display());
+                        eprintln!(
+                            "Warning: 'arguments' field in {} is not a list, ignoring",
+                            file.display()
+                        );
                     }
                 }
             }
         }
     }
-    
+
     Ok(PromptData {
         name,
         title,
@@ -294,7 +334,8 @@ mod tests {
 
     #[test]
     fn test_parse_git_url_with_credentials() {
-        let (owner, name) = parse_git_url("https://username:token@github.com/owner/repo.git").unwrap();
+        let (owner, name) =
+            parse_git_url("https://username:token@github.com/owner/repo.git").unwrap();
         assert_eq!(owner, "owner");
         assert_eq!(name, "repo");
     }
@@ -321,7 +362,9 @@ mod tests {
     fn test_get_folder_path_no_config() {
         let result = get_folder_path(None, None, "/cache", false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Either folder or git-url must be provided"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Either folder or git-url must be provided"));
     }
 }
-
