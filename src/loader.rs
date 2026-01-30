@@ -143,26 +143,16 @@ fn parse_markdown(
         });
     }
 
-    // Parse frontmatter manually
-    let (frontmatter, body) = if content.starts_with("---\n") {
-        if let Some(end_idx) = content[4..].find("\n---\n") {
-            let fm = &content[4..end_idx + 4];
-            let body = &content[end_idx + 8..];
-            (Some(fm), body)
-        } else {
-            (None, content)
-        }
-    } else {
-        (None, content)
-    };
+    let parsed = gray_matter::Matter::<gray_matter::engine::YAML>::new().parse(content);
+    let body = parsed.content.trim();
 
     let mut name = stem.clone();
     let mut title = stem.clone();
     let mut description = default_description.clone();
     let mut arguments = Vec::new();
 
-    if let Some(fm) = frontmatter {
-        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(fm) {
+    if let Some(data) = parsed.data {
+        if let Ok(yaml) = data.deserialize::<serde_yaml::Value>() {
             if let Some(mapping) = yaml.as_mapping() {
                 // Extract name field
                 if let Some(n) = mapping.get("name") {
@@ -285,7 +275,7 @@ fn parse_markdown(
         title,
         description,
         arguments,
-        content: body.trim().to_string(),
+        content: body.to_string(),
     })
 }
 

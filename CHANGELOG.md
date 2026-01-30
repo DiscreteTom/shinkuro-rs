@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - MCP init response now uses actual package version from Cargo.toml instead of hardcoded value
+- Frontmatter parsing now uses `gray_matter` library for robust YAML parsing instead of manual string manipulation
 
 ### Added
 
