@@ -64,16 +64,29 @@ fn parse_git_url(git_url: &str) -> Result<(String, String)> {
 }
 
 fn clone_or_update(path: &Path, url: &str, auto_pull: bool) -> Result<()> {
+    // Setup SSH credential callback to use ssh-agent for authentication
+    let mut callbacks = git2::RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        // Try to authenticate using SSH keys from ssh-agent
+        // Falls back to "git" username if not specified in URL
+        git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+    });
+
     if path.exists() {
         if auto_pull {
             let repo = git2::Repository::open(path)?;
             let mut remote = repo.find_remote("origin")?;
-            remote.fetch(&[] as &[&str], None, None)?;
+
+            // Configure fetch options with SSH credentials
+            let mut fo = git2::FetchOptions::new();
+            fo.remote_callbacks(callbacks);
+            remote.fetch(&[] as &[&str], Some(&mut fo), None)?;
 
             let fetch_head = repo.find_reference("FETCH_HEAD")?;
             let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
             let analysis = repo.merge_analysis(&[&fetch_commit])?;
 
+            // Fast-forward if possible
             if analysis.0.is_fast_forward() {
                 let head = repo.head()?;
                 let refname = head
@@ -86,13 +99,13 @@ fn clone_or_update(path: &Path, url: &str, auto_pull: bool) -> Result<()> {
             }
         }
     } else {
+        // Clone repository with shallow depth and SSH credentials
         std::fs::create_dir_all(path.parent().unwrap())?;
         let mut builder = git2::build::RepoBuilder::new();
-        builder.fetch_options({
-            let mut fo = git2::FetchOptions::new();
-            fo.depth(1);
-            fo
-        });
+        let mut fo = git2::FetchOptions::new();
+        fo.remote_callbacks(callbacks);
+        fo.depth(1); // Shallow clone to save bandwidth
+        builder.fetch_options(fo);
         builder.clone(url, path)?;
     }
     Ok(())
