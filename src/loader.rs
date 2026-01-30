@@ -144,7 +144,7 @@ fn parse_markdown(
             title: stem,
             description: default_description,
             arguments: vec![],
-            content: content.to_string(),
+            content: content.trim().to_string(),
         });
     }
 
@@ -290,7 +290,7 @@ fn parse_markdown(
         title,
         description,
         arguments,
-        content: body.to_string(),
+        content: body.trim().to_string(),
     })
 }
 
