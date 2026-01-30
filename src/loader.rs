@@ -64,49 +64,31 @@ fn parse_git_url(git_url: &str) -> Result<(String, String)> {
 }
 
 fn clone_or_update(path: &Path, url: &str, auto_pull: bool) -> Result<()> {
-    // Setup SSH credential callback to use ssh-agent for authentication
-    let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_url, username_from_url, _allowed_types| {
-        // Try to authenticate using SSH keys from ssh-agent
-        // Falls back to "git" username if not specified in URL
-        git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
-    });
-
     if path.exists() {
         if auto_pull {
-            let repo = git2::Repository::open(path)?;
-            let mut remote = repo.find_remote("origin")?;
-
-            // Configure fetch options with SSH credentials
-            let mut fo = git2::FetchOptions::new();
-            fo.remote_callbacks(callbacks);
-            remote.fetch(&[] as &[&str], Some(&mut fo), None)?;
-
-            let fetch_head = repo.find_reference("FETCH_HEAD")?;
-            let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
-            let analysis = repo.merge_analysis(&[&fetch_commit])?;
-
-            // Fast-forward if possible
-            if analysis.0.is_fast_forward() {
-                let head = repo.head()?;
-                let refname = head
-                    .name()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid HEAD reference"))?;
-                let mut reference = repo.find_reference(refname)?;
-                reference.set_target(fetch_commit.id(), "Fast-Forward")?;
-                repo.set_head(refname)?;
-                repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
+            // Use git command for pull
+            let output = std::process::Command::new("git")
+                .args(&["-C", path.to_str().unwrap(), "pull", "--ff-only"])
+                .output()?;
+            if !output.status.success() {
+                eprintln!(
+                    "Git pull warning: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
             }
         }
     } else {
-        // Clone repository with shallow depth and SSH credentials
+        // Use git command for clone (supports SSH agent and credential helpers)
         std::fs::create_dir_all(path.parent().unwrap())?;
-        let mut builder = git2::build::RepoBuilder::new();
-        let mut fo = git2::FetchOptions::new();
-        fo.remote_callbacks(callbacks);
-        fo.depth(1); // Shallow clone to save bandwidth
-        builder.fetch_options(fo);
-        builder.clone(url, path)?;
+        let output = std::process::Command::new("git")
+            .args(&["clone", "--depth", "1", url, path.to_str().unwrap()])
+            .output()?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "Git clone failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
     }
     Ok(())
 }

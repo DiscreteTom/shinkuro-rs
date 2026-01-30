@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP lifecycle: properly handle `notifications/initialized` without sending response
 - Path expansion: resolve `~` and relative paths in `FOLDER` environment variable
 - Trim leading and trailing whitespace from prompt content
-- Git SSH authentication: use ssh-agent credentials for SSH URLs
+- Git clone: use `git` command directly for reliable cloning with proper working tree checkout
+
+### Changed
+
+- Replace `git2` library with direct `git` command for better SSH agent and credential helper support
 
 ## [0.1.1] - 2026-01-28
 

@@ -11,7 +11,6 @@ serde_json = "1"
 serde_yaml = "0.9"
 clap = { version = "4", features = ["derive", "env"] }
 walkdir = "2"
-git2 = "0.19"
 url = "2"
 shellexpand = "3"
 anyhow = "1"
