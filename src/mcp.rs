@@ -72,7 +72,8 @@ impl McpServer {
                 result: Some(json!({
                     "protocolVersion": "2025-06-18",
                     "capabilities": { "prompts": {} },
-                    "serverInfo": { "name": "shinkuro", "version": env!("CARGO_PKG_VERSION") }
+                    "serverInfo": { "name": "shinkuro", "version": env!("CARGO_PKG_VERSION") },
+                    "instructions": ""
                 })),
                 error: None,
             }),
