@@ -7,7 +7,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 #[derive(Deserialize)]
 struct Request {
-    id: Value,
+    #[serde(default)]
+    id: Option<Value>,
     method: String,
     params: Option<Value>,
 }
@@ -15,7 +16,7 @@ struct Request {
 #[derive(Serialize)]
 struct Response {
     jsonrpc: String,
-    id: Value,
+    id: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     result: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -51,20 +52,21 @@ impl McpServer {
 
         while reader.read_line(&mut line).await? > 0 {
             if let Ok(req) = serde_json::from_str::<Request>(&line) {
-                let resp = self.handle_request(req);
-                let json = serde_json::to_string(&resp)?;
-                stdout.write_all(json.as_bytes()).await?;
-                stdout.write_all(b"\n").await?;
-                stdout.flush().await?;
+                if let Some(resp) = self.handle_request(req) {
+                    let json = serde_json::to_string(&resp)?;
+                    stdout.write_all(json.as_bytes()).await?;
+                    stdout.write_all(b"\n").await?;
+                    stdout.flush().await?;
+                }
             }
             line.clear();
         }
         Ok(())
     }
 
-    fn handle_request(&self, req: Request) -> Response {
+    fn handle_request(&self, req: Request) -> Option<Response> {
         match req.method.as_str() {
-            "initialize" => Response {
+            "initialize" => Some(Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
                 result: Some(json!({
@@ -73,8 +75,9 @@ impl McpServer {
                     "serverInfo": { "name": "shinkuro", "version": "0.1.0" }
                 })),
                 error: None,
-            },
-            "prompts/list" => Response {
+            }),
+            "notifications/initialized" => None,
+            "prompts/list" => Some(Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
                 result: Some(json!({
@@ -90,7 +93,7 @@ impl McpServer {
                     })).collect::<Vec<_>>()
                 })),
                 error: None,
-            },
+            }),
             "prompts/get" => {
                 let name = req
                     .params
@@ -109,15 +112,15 @@ impl McpServer {
                             });
 
                         match prompt.render(args) {
-                            Ok(content) => Response {
+                            Ok(content) => Some(Response {
                                 jsonrpc: "2.0".to_string(),
                                 id: req.id,
                                 result: Some(json!({
                                     "messages": [{ "role": "user", "content": { "type": "text", "text": content } }]
                                 })),
                                 error: None,
-                            },
-                            Err(e) => Response {
+                            }),
+                            Err(e) => Some(Response {
                                 jsonrpc: "2.0".to_string(),
                                 id: req.id,
                                 result: None,
@@ -125,10 +128,10 @@ impl McpServer {
                                     code: -32602,
                                     message: e,
                                 }),
-                            },
+                            }),
                         }
                     } else {
-                        Response {
+                        Some(Response {
                             jsonrpc: "2.0".to_string(),
                             id: req.id,
                             result: None,
@@ -136,10 +139,10 @@ impl McpServer {
                                 code: -32602,
                                 message: "Prompt not found".to_string(),
                             }),
-                        }
+                        })
                     }
                 } else {
-                    Response {
+                    Some(Response {
                         jsonrpc: "2.0".to_string(),
                         id: req.id,
                         result: None,
@@ -147,10 +150,10 @@ impl McpServer {
                             code: -32602,
                             message: "Missing name parameter".to_string(),
                         }),
-                    }
+                    })
                 }
             }
-            _ => Response {
+            _ => Some(Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
                 result: None,
@@ -158,7 +161,7 @@ impl McpServer {
                     code: -32601,
                     message: "Method not found".to_string(),
                 }),
-            },
+            }),
         }
     }
 }
