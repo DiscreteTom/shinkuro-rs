@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP init response now uses actual package version from Cargo.toml instead of hardcoded value
 - Frontmatter parsing now uses `gray_matter` library for robust YAML parsing instead of manual string manipulation
 - Add empty `instructions` field to MCP init response for protocol compliance
+- Add `listChanged: false` to capabilities for MCP client compatibility
+- Add `tools/list` and `tools/call` handlers for MCP client compatibility
 
 ### Added
 

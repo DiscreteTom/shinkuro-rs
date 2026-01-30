@@ -71,7 +71,14 @@ impl McpServer {
                 id: req.id,
                 result: Some(json!({
                     "protocolVersion": "2025-06-18",
-                    "capabilities": { "prompts": {} },
+                    "capabilities": {
+                        "prompts": {
+                            "listChanged": false
+                        },
+                        "tools": {
+                            "listChanged": false
+                        }
+                    },
                     "serverInfo": { "name": "shinkuro", "version": env!("CARGO_PKG_VERSION") },
                     "instructions": ""
                 })),
@@ -160,6 +167,21 @@ impl McpServer {
                     })
                 }
             }
+            "tools/list" => Some(Response {
+                jsonrpc: "2.0".to_string(),
+                id: req.id,
+                result: Some(json!({ "tools": [] })),
+                error: None,
+            }),
+            "tools/call" => Some(Response {
+                jsonrpc: "2.0".to_string(),
+                id: req.id,
+                result: None,
+                error: Some(ErrorObject {
+                    code: -32602,
+                    message: "No tools available".to_string(),
+                }),
+            }),
             _ => Some(Response {
                 jsonrpc: "2.0".to_string(),
                 id: req.id,
