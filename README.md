@@ -15,7 +15,7 @@ Useful for loading prompts from various sources and formats into your MCP-enable
 
 <details>
 
-<summary><code>npx -y shinkuro -- --help</code></summary>
+<summary><code>npx -y shinkuro --help</code></summary>
 
 ```sh
 Universal prompt loader MCP server
