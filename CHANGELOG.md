@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- MCP init response now uses actual package version from Cargo.toml instead of hardcoded value
+
 ### Added
 
 - Shell and PowerShell installers for standalone binary distribution
